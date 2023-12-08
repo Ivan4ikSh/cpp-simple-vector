@@ -9,10 +9,7 @@
 // класс-обёртка для работы функции Reserve
 class ReserveProxyObj {
 public:
-    ReserveProxyObj(size_t capacity)
-        : capacity_(capacity)
-    {
-    }
+    ReserveProxyObj(size_t capacity) : capacity_(capacity) {}
 
     size_t GetCapacity() {
         return capacity_;
@@ -34,42 +31,35 @@ public:
     explicit SimpleVector(size_t size)  : SimpleVector(size, Type()) { }
 
     // Создаёт вектор из size элементов, инициализированных значением value
-    SimpleVector(size_t size, const Type& value) : items_(size), size_(size), capacity_(size)
-    {
+    SimpleVector(size_t size, const Type& value) : items_(size), size_(size), capacity_(size) {
         std::fill(items_.Get(), items_.Get() + size, value);
     }
 
     // Создаёт вектор из std::initializer_list
-    SimpleVector(std::initializer_list<Type> init) : items_(init.size()), size_(init.size()), capacity_(init.size())
-    {
+    SimpleVector(std::initializer_list<Type> init) : items_(init.size()), size_(init.size()), capacity_(init.size()) {
         std::copy(init.begin(), init.end(), items_.Get());
     }
 
     // конструктор копирования
-    SimpleVector(const SimpleVector& other) : items_(other.capacity_), size_(other.size_)
-    {
+    SimpleVector(const SimpleVector& other) : items_(other.capacity_), size_(other.size_) {
         std::copy(other.begin(), other.end(), items_.Get());
     }
 
     // конструктор перемещения
-    SimpleVector(SimpleVector&& other) : items_(other.capacity_)
-    {
+    SimpleVector(SimpleVector&& other) : items_(other.capacity_) {
         swap(other);
     }
 
     // Конструктор с вызовом функции Reserve
-    explicit SimpleVector(ReserveProxyObj obj)
-    {
+    explicit SimpleVector(ReserveProxyObj obj) {
         Reserve(obj.GetCapacity());
     }
 
     SimpleVector& operator=(const SimpleVector& rhs) {
         if (&items_ != &rhs.items_) {
-            ArrayPtr<Type> temp(rhs.GetCapacity());
+            SimpleVector temp(rhs);
 
-            std::copy(rhs.begin(), rhs.end(), temp.Get());
-
-            items_.swap(temp);
+            items_.swap(temp.items_);
             size_ = rhs.GetSize();
             capacity_ = rhs.GetCapacity();
         }
@@ -78,25 +68,31 @@ public:
 
     // Возвращает ссылку на элемент с индексом index
     Type& operator[](size_t index) noexcept {
+        assert(index < size_);
         return items_[index];
     }
 
     // Возвращает константную ссылку на элемент с индексом index
     const Type& operator[](size_t index) const noexcept {
+        assert(index < size_);
         return items_[index];
     }
 
     // Возвращает константную ссылку на элемент с индексом index
     // Выбрасывает исключение std::out_of_range, если index >= size
     Type& At(size_t index) {
-        if (index >= size_) throw std::out_of_range("Out of range");
+        if (index >= size_) {
+            throw std::out_of_range("Out of range");
+        }
         return items_[index];
     }
 
     // Возвращает константную ссылку на элемент с индексом index
     // Выбрасывает исключение std::out_of_range, если index >= size
     const Type& At(size_t index) const {
-        if (index >= size_) throw std::out_of_range("Out of range");
+        if (index >= size_) {
+            throw std::out_of_range("Out of range");
+        }
         return items_[index];
     }
 
@@ -167,8 +163,12 @@ public:
     // Изменяет размер массива.
     // При увеличении размера новые элементы получают значение по умолчанию для типа Type
     void Resize(size_t new_size) {
-        if (new_size <= size_) size_ = new_size;
-        if (new_size <= capacity_) Fill(items_.Get() + size_, items_.Get() + size_ + new_size);
+        if (new_size <= size_) {
+            size_ = new_size;
+        }
+        if (new_size <= capacity_) {
+            Fill(items_.Get() + size_, items_.Get() + size_ + new_size);
+        }
         if (new_size > capacity_) {
             size_t new_capacity = std::max(new_size, capacity_ * 2);
             ArrayPtr<Type> temp(new_capacity);
@@ -283,7 +283,8 @@ public:
 
     // "Удаляет" последний элемент вектора. Вектор не должен быть пустым
     void PopBack() noexcept {
-        if (items_) --size_;
+        assert(IsEmpty());
+        --size_;
     }
 
     // Удаляет элемент вектора в указанной позиции
@@ -333,7 +334,7 @@ inline bool operator==(const SimpleVector<Type>& lhs, const SimpleVector<Type>& 
 
 template <typename Type>
 inline bool operator!=(const SimpleVector<Type>& lhs, const SimpleVector<Type>& rhs) {
-    return !std::equal(lhs.begin(), lhs.end(), rhs.begin());
+    return !(lhs == rhs);
 }
 
 template <typename Type>
@@ -343,15 +344,15 @@ inline bool operator<(const SimpleVector<Type>& lhs, const SimpleVector<Type>& r
 
 template <typename Type>
 inline bool operator<=(const SimpleVector<Type>& lhs, const SimpleVector<Type>& rhs) {
-    return (lhs < rhs || lhs == rhs);
+    return lhs < rhs || lhs == rhs;
 }
 
 template <typename Type>
 inline bool operator>(const SimpleVector<Type>& lhs, const SimpleVector<Type>& rhs) {
-    return !(lhs <= rhs);
+    return rhs < lhs;
 }
 
 template <typename Type>
 inline bool operator>=(const SimpleVector<Type>& lhs, const SimpleVector<Type>& rhs) {
-    return !(lhs < rhs);
+    return rhs < lhs || lhs == rhs;
 }

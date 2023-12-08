@@ -21,7 +21,9 @@ public:
     explicit ArrayPtr(Type* raw_ptr) noexcept : raw_ptr_(raw_ptr) { }
 
     // Запрещаем копирование
-    ArrayPtr(const ArrayPtr&) = delete;
+    ArrayPtr(const ArrayPtr& other) {
+        other.raw_ptr_ = delete(raw_ptr_);
+    }
 
     ~ArrayPtr() {
         delete[] raw_ptr_;
