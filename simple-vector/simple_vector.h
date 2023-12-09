@@ -60,8 +60,8 @@ public:
             SimpleVector temp(rhs);
 
             items_.swap(temp.items_);
-            size_ = rhs.GetSize();
-            capacity_ = rhs.GetCapacity();
+            std::swap(size_, temp.size_);
+            std::swap(capacity_, temp.capacity_);
         }
         return *this;
     }
@@ -150,14 +150,6 @@ public:
     // Обнуляет размер массива, не изменяя его вместимость
     void Clear() noexcept {
         size_ = 0;
-    }
-
-    // на замену std::fill для поддержки семантики перемещения метода Resize
-    void Fill(Iterator first, Iterator last) {
-        assert(first < last);
-
-        for (; first != last; ++first)
-            *first = std::move(Type());
     }
 
     // Изменяет размер массива.
@@ -289,7 +281,7 @@ public:
 
     // Удаляет элемент вектора в указанной позиции
     Iterator Erase(ConstIterator pos) {
-        assert(pos != this->end());
+        assert(pos >= begin() && pos < end())
 
         size_t count = pos - items_.Get();
         std::move(items_.Get() + count + 1, items_.Get() + size_, items_.Get() + count);
@@ -321,6 +313,14 @@ private:
     ArrayPtr<Type> items_;
     size_t size_ = 0;
     size_t capacity_ = 0;
+
+    // на замену std::fill для поддержки семантики перемещения метода Resize
+    void Fill(Iterator first, Iterator last) {
+        assert(first < last);
+
+        for (; first != last; ++first)
+            *first = std::move(Type());
+    }
 };
 
 ReserveProxyObj Reserve(size_t capacity_to_reserve) {
@@ -344,7 +344,7 @@ inline bool operator<(const SimpleVector<Type>& lhs, const SimpleVector<Type>& r
 
 template <typename Type>
 inline bool operator<=(const SimpleVector<Type>& lhs, const SimpleVector<Type>& rhs) {
-    return lhs < rhs || lhs == rhs;
+    return lhs < rhs || (!(lhs < rhs) && !(rhs < lhs));
 }
 
 template <typename Type>
@@ -354,5 +354,5 @@ inline bool operator>(const SimpleVector<Type>& lhs, const SimpleVector<Type>& r
 
 template <typename Type>
 inline bool operator>=(const SimpleVector<Type>& lhs, const SimpleVector<Type>& rhs) {
-    return rhs < lhs || lhs == rhs;
+    return rhs < lhs || (!(lhs < rhs) && !(rhs < lhs));
 }
