@@ -275,7 +275,7 @@ public:
 
     // "Удаляет" последний элемент вектора. Вектор не должен быть пустым
     void PopBack() noexcept {
-        assert(IsEmpty());
+        assert(!IsEmpty());
         --size_;
     }
 
@@ -344,7 +344,7 @@ inline bool operator<(const SimpleVector<Type>& lhs, const SimpleVector<Type>& r
 
 template <typename Type>
 inline bool operator<=(const SimpleVector<Type>& lhs, const SimpleVector<Type>& rhs) {
-    return lhs < rhs || (!(lhs < rhs) && !(rhs < lhs));
+    return lhs < rhs || !(rhs < lhs);
 }
 
 template <typename Type>
@@ -354,5 +354,5 @@ inline bool operator>(const SimpleVector<Type>& lhs, const SimpleVector<Type>& r
 
 template <typename Type>
 inline bool operator>=(const SimpleVector<Type>& lhs, const SimpleVector<Type>& rhs) {
-    return rhs < lhs || (!(lhs < rhs) && !(rhs < lhs));
+    return rhs < lhs || !(lhs < rhs);
 }
